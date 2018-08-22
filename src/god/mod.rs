@@ -4,7 +4,6 @@ extern crate hex;
 
 use std::io::{ Result };
 use std::net::{ SocketAddr };
-use std::thread;
 
 mod routing;
 mod proto;
@@ -15,7 +14,6 @@ mod rpc;
 use self::routing::*;
 use self::node::*;
 use self::rpc::*;
-
 
 pub struct GodConfig {
   pub verbose: u8,
@@ -60,11 +58,8 @@ impl God {
 
     let addr = self.config.listen_addr.clone().to_string();
 
-    let handle = thread::spawn(move || {
-      Server::wait_thread(DhtService::listen(&addr));
-    });
+    Rpc::Server::wait_thread(Rpc::listen(&addr));
 
-    handle.join().unwrap();
     Ok(())
   }
 
@@ -72,7 +67,13 @@ impl God {
     if let Some(addr) = self.config.connect_addr {
       info!("Connecting to {}", addr);
 
-      let mut bootstrap_node = ServiceClient::connect(&self.config.connect_addr.unwrap().to_string());
+      let mut bootstrap_node = Rpc::connect(&self.config.connect_addr.unwrap().to_string());
+
+      // self.routing.try_add(Node {
+      //   sender: Sender {
+
+      //   }
+      // });
 
       info!("Connected: {}", bootstrap_node.ping());
     } else {

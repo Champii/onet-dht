@@ -14,7 +14,7 @@ use std::io::Result;
 
 mod god;
 
-use god::God;
+pub use god::God;
 
 fn main() -> Result<()> {
   env_logger::init();

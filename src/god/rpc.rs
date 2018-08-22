@@ -1,39 +1,23 @@
-use rsrpc::*;
-
 type Hash = String;
 type Data = Vec<u8>;
+type Nodes = Vec<Hash>;
 
 service! {
-  rpc ping() ->  bool;
-  rpc fetch(hash: Hash) -> Data;
-  rpc fetch_node(hash: Hash) -> Vec<Hash>;
-  rpc store(data: Data) -> Hash;
-}
+  Rpc {
+    fn ping() -> bool {
+      true
+    }
 
-pub struct DhtService;
+    fn fetch(hash: String) -> Vec<u8> {
+      Vec::new()
+    }
 
-impl Service for DhtService {
-  fn ping() -> bool {
-    trace!("> Ping");
-    trace!("< Pong");
-    true
-  }
+    fn fetch_node(hash: String) -> Vec<String> {
+      Vec::new()
+    }
 
-  fn fetch(hash: Hash) -> Data {
-    trace!("> Fetch");
-    trace!("< Found");
-    Vec::new()
-  }
-
-  fn fetch_node(hash: Hash) -> Vec<Hash> {
-    trace!("> Fetch Node");
-    trace!("> Found Node");
-    Vec::new()
-  }
-
-  fn store(data: Data) -> Hash {
-    trace!("> Store");
-    trace!("< Stored");
-    Hash::new()
+    fn store(data: Vec<u8>) -> String {
+      String::new()
+    }
   }
 }

@@ -1,5 +1,5 @@
 [package]
-name = "test3"
+name = "rust-dht"
 version = "0.1.0"
 authors = ["champii <contact@champii.io>"]
 

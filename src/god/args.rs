@@ -13,10 +13,10 @@ pub fn to_socket_addr(s: &str) -> SocketAddr {
 }
 
 pub fn parse_config() -> GodConfig {
-  let matches = App::new("My Super Program")
+  let matches = App::new("Rust-Dht")
     .version("1.0")
-    .author("Kevin K. <kbknapp@gmail.com>")
-    .about("Does awesome things")
+    .author("Champii <contact@champii.io>")
+    .about("Simple dht in Rust")
     .arg(Arg::with_name("listen")
       .short("l")
       .long("listen")
