@@ -9,15 +9,19 @@ extern crate bincode;
 extern crate clap;
 extern crate xor;
 extern crate futures;
+extern crate sha2;
+extern crate shrust;
 
-use std::io::Result;
+mod dht;
 
-mod god;
+pub use dht::Dht;
 
-pub use god::God;
+fn main() {
+  let config = dht::args::parse_config();
 
-fn main() -> Result<()> {
-  env_logger::init();
+  let mut dht = Dht::new(config);
 
-  God::new().run()
+  dht.run();
+
+  dht.wait_close();
 }

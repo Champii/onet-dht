@@ -1,7 +1,7 @@
 use clap::{Arg, App};
 use std::net::{ SocketAddr };
 
-use super::GodConfig;
+use super::DhtConfig;
 
 pub fn to_socket_addr(s: &str) -> SocketAddr {
   match s.parse::<SocketAddr>() {
@@ -12,7 +12,7 @@ pub fn to_socket_addr(s: &str) -> SocketAddr {
   }
 }
 
-pub fn parse_config() -> GodConfig {
+pub fn parse_config() -> DhtConfig {
   let matches = App::new("Rust-Dht")
     .version("1.0")
     .author("Champii <contact@champii.io>")
@@ -50,7 +50,7 @@ pub fn parse_config() -> GodConfig {
 
   let verbose = matches.value_of("verbose").unwrap_or("2").parse::<u8>().unwrap();
 
-  GodConfig {
+  DhtConfig {
     listen_addr,
     connect_addr,
     verbose,

@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 use super::God;
 use super::Node;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Sender {
   pub addr: SocketAddr,
   pub hash: String,
