@@ -1,9 +1,7 @@
 use shrust::{Shell, ShellIO};
 use std::io::prelude::*;
 use std::thread;
-use std::sync::Arc;
 use super::Dht;
-use super::Mutexed;
 
 pub fn run(dht: Dht) {
   // let mut dht = dht.clone();
@@ -28,7 +26,7 @@ pub fn run(dht: Dht) {
     });
 
     shell.new_command_noargs("r", "Routing", |io, dht| {
-      for (h, n) in dht.routing.get().buckets.iter() {
+      for (h, _) in dht.routing.get().buckets.iter() {
         try!(writeln!(io, "{}", h));
       }
 

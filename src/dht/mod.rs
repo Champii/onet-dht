@@ -1,14 +1,10 @@
-#![feature(async_await, await_macro)]
 extern crate rand;
 extern crate hex;
 
 use std::io::{ Result };
 use std::net::{ SocketAddr };
-use std::sync::{ Arc, Mutex };
-use std::cell::{ RefCell };
-use std::rc::{ Rc };
+use std::sync::{ Arc };
 use rsrpc::{ Wrapper, Packet, Plugins };
-use std::collections::HashMap;
 use sha2::{ Sha256, Digest };
 use std::fmt::{ Debug, Result as FResult, Formatter };
 use std::thread;
@@ -28,7 +24,6 @@ use self::storage::*;
 use self::node::*;
 use self::rpc::*;
 use self::utils::*;
-use self::logger::*;
 
 #[derive(Clone, Debug)]
 pub struct DhtConfig {
@@ -87,7 +82,7 @@ impl Wrapper for HashWrapper {
     self.routing.map(Box::new(move |routing: &mut Routing| {
       let hash_cpy = hash.clone();
 
-      routing.try_add(Node::new(sender, hash_cpy));
+      routing.try_add(Node::new(sender, hash_cpy)).unwrap();
     }));
 
     mut_pack.data = data.clone().to_vec();
@@ -143,7 +138,7 @@ impl Dht {
       routing: self.routing.clone(),
     });
 
-    self.bootstrap();
+    self.bootstrap().unwrap();
 
     let addr = self.config.listen_addr.clone().to_string();
 

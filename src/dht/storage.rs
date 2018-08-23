@@ -1,4 +1,3 @@
-use super::Mutexed;
 use std::collections::HashMap;
 
 #[derive(Clone, Default, Debug)]

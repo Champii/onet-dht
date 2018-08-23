@@ -7,7 +7,6 @@ use std::str;
 use std::cmp::Ordering::*;
 
 use super::node::*;
-use super::RwMutexed;
 
 const MAX_BUCKET_LEN: usize = 4;
 

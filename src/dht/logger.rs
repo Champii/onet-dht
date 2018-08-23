@@ -1,5 +1,5 @@
 use std::io::Write;
-use env_logger::{Env, Builder, fmt, Color};
+use env_logger::{Env, Builder, Color};
 use log::{Level, LevelFilter};
 
 pub fn init_logger(level: u8) {
