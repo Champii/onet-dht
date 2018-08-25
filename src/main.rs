@@ -1,6 +1,8 @@
 #![feature(async_await, await_macro, pin, arbitrary_self_types, futures_api)]
 #[macro_use] extern crate log;
 #[macro_use] extern crate rsrpc;
+#[macro_use] pub extern crate lazy_static;
+
 extern crate env_logger;
 extern crate serde;
 extern crate serde_bytes;

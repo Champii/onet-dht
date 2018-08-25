@@ -138,11 +138,11 @@ impl Dht {
       routing: self.routing.clone(),
     });
 
-    self.bootstrap().unwrap();
-
     let addr = self.config.listen_addr.clone().to_string();
 
-    let server = Rpc::listen(&addr);
+    let server = Rpc::Duplex::listen(&addr);
+
+    self.bootstrap().unwrap();
 
     {
       let mut guard = server.context.lock().unwrap();
@@ -151,18 +151,19 @@ impl Dht {
 
     cli::run(self.clone());
 
-    self.handle = Some(Arc::new(thread::spawn(move || {
-      Rpc::Server::wait_thread(server);
-    })));
+    // self.handle = Some(Arc::new(thread::spawn(move || {
+    //   server.wait();
+    // })));
   }
 
   fn bootstrap(&self) -> Result<()> {
     if let Some(addr) = self.config.connect_addr {
       trace!("Connecting to {}", addr);
 
-      let mut bootstrap_node = Rpc::connect(&self.config.connect_addr.unwrap().to_string());
+      let mut bootstrap_node = Rpc::Duplex::connect(&self.config.connect_addr.unwrap().to_string());
 
       let res = bootstrap_node.ping();
+
       debug!("Connected: {}", res);
     } else {
       warn!("Bootstrap node !");
@@ -176,7 +177,7 @@ impl Dht {
 
     match self.routing.get().get_nearest_of(hash.clone()) {
       Some(node) => {
-        let mut client = Rpc::connect(&node.addr.to_string());
+        let mut client = Rpc::Duplex::connect(&node.addr.to_string());
 
         client.store(data)
       }
@@ -196,7 +197,7 @@ impl Dht {
     match self.storage.get().get(hash.clone()) {
       None => {
         if let Some(node) = self.routing.get().get_nearest_of(hash.clone()) {
-          let mut client = Rpc::connect(&node.addr.to_string());
+          let mut client = Rpc::Duplex::connect(&node.addr.to_string());
 
           client.fetch(hash)
         } else {
@@ -210,11 +211,12 @@ impl Dht {
   }
 
   pub fn wait_close(&mut self) {
-    if let Some(handle) = self.handle.take() {
-      let mut handle = Arc::try_unwrap(handle).unwrap();
+    Rpc::Duplex::wait()
+    // if let Some(handle) = self.handle.take() {
+    //   let mut handle = Arc::try_unwrap(handle).unwrap();
 
-      handle.join().unwrap();
-    }
+    //   handle.join().unwrap();
+    // }
   }
 }
 

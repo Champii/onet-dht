@@ -90,6 +90,7 @@ impl Routing {
     }
   }
 
+  #[allow(unused)]
   pub fn is_nearer(&self, h1: &String, h2: &String) -> bool {
     let dist1 = Self::xor_distance(&self.hash, h1);
     let dist2 = Self::xor_distance(&self.hash, h2);
