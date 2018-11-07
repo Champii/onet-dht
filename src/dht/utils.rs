@@ -1,4 +1,4 @@
-use std::sync::{ Arc, Mutex };
+use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Debug, Default)]
 pub struct Mutexed<T> {
@@ -32,7 +32,7 @@ impl<T: Clone> Mutexed<T> {
   }
 
   #[allow(dead_code)]
-  pub fn map_result<R>(&self, f: Box<Fn(&mut T) -> R>) -> R{
+  pub fn map_result<R>(&self, f: Box<Fn(&mut T) -> R>) -> R {
     let mut guard = self.mutex.lock().unwrap();
 
     f(&mut *guard)

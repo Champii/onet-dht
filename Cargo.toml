@@ -1,9 +1,19 @@
 [package]
-name = "rust-dht"
+name = "rust_dht"
 version = "0.1.0"
 authors = ["champii <contact@champii.io>"]
 
+[lib]
+name = "rust_dht"
+path = "src/dht/mod.rs"
+
+[[bin]]
+name = "rust_dht"
+path = "src/main.rs"
+
 [dependencies]
+ring="0.13.2"
+untrusted="0.6.2"
 clap="2.32.0"
 serde="1.0.71"
 hex="0.3.2"

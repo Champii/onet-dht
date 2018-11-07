@@ -1,6 +1,6 @@
-use std::io::Write;
-use env_logger::{Env, Builder, Color};
+use env_logger::{Builder, Color, Env};
 use log::{Level, LevelFilter};
+use std::io::Write;
 
 pub fn init_logger(level: u8) {
   let env = Env::default();

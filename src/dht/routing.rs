@@ -1,10 +1,11 @@
 extern crate hex;
 
-use std::io::Result;
-use std::collections::HashMap;
-use xor::xor;
-use std::str;
 use std::cmp::Ordering::*;
+use std::collections::HashMap;
+use std::io::Result;
+use std::str;
+use std::sync::Arc;
+use xor::xor;
 
 use super::node::*;
 
@@ -18,7 +19,7 @@ pub struct Routing {
 
 impl Routing {
   pub fn new(hash: String) -> Routing {
-    Routing{
+    Routing {
       hash,
       buckets: HashMap::new(),
     }
@@ -28,16 +29,17 @@ impl Routing {
     let hash = node.hash.clone();
     let farthest = self.get_farthest();
 
-    if self.buckets.len() >= MAX_BUCKET_LEN - 1 && self.is_farther(&hash, &farthest.clone().unwrap().hash) {
+    if self.buckets.len() >= MAX_BUCKET_LEN - 1
+      && self.is_farther(&hash, &farthest.clone().unwrap().hash)
+    {
       trace!("Node is too far, ignoring {}", hash);
 
-      return Ok(())
+      return Ok(());
     }
 
     if let None = self.buckets.get(&hash) {
-
-      info!("Inserting {} ({})", hash, self.buckets.len() + 1);
-      self.buckets.insert(hash, node);
+      debug!("Inserting {} ({})", hash, self.buckets.len() + 1);
+      self.buckets.insert(hash, node.clone());
 
       if self.buckets.len() >= MAX_BUCKET_LEN {
         debug!("Bucket full ! Removing farthest");
@@ -133,8 +135,4 @@ impl Routing {
 
     String::from("")
   }
-
-  // pub fn get_nearest_bucket(&self, hash: &String) -> Vec<Node> {
-
-  // }
 }

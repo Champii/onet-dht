@@ -1,28 +1,28 @@
-#![feature(async_await, await_macro, pin, arbitrary_self_types, futures_api)]
-#[macro_use] extern crate log;
-#[macro_use] extern crate rsrpc;
-#[macro_use] pub extern crate lazy_static;
-
-extern crate env_logger;
-extern crate serde;
-extern crate serde_bytes;
-extern crate bincode;
+#![feature(
+  async_await,
+  await_macro,
+  pin,
+  arbitrary_self_types,
+  futures_api
+)]
+#[macro_use]
+extern crate log;
 extern crate clap;
-extern crate xor;
-extern crate futures;
-extern crate sha2;
-extern crate shrust;
+extern crate rust_dht;
 
-mod dht;
+mod args;
 
-pub use dht::Dht;
+use rust_dht::logger;
+pub use rust_dht::Dht;
 
 fn main() {
-  let config = dht::args::parse_config();
+  let config = args::parse_config();
+
+  logger::init_logger(config.verbose);
 
   let mut dht = Dht::new(config);
 
-  dht.run();
+  dht.run(true);
 
   dht.wait_close();
 }

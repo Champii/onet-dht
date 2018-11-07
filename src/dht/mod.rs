@@ -1,29 +1,48 @@
-extern crate rand;
-extern crate hex;
+#[macro_use]
+extern crate log;
+#[macro_use]
+extern crate rsrpc;
+#[macro_use]
+pub extern crate lazy_static;
 
-use std::io::{ Result };
-use std::net::{ SocketAddr };
-use std::sync::{ Arc };
-use rsrpc::{ Wrapper, Packet, Plugins };
-use sha2::{ Sha256, Digest };
-use std::fmt::{ Debug, Result as FResult, Formatter };
+extern crate hex;
+extern crate rand;
+
+extern crate bincode;
+extern crate env_logger;
+extern crate futures;
+extern crate ring;
+extern crate serde;
+extern crate serde_bytes;
+extern crate sha2;
+extern crate shrust;
+extern crate untrusted;
+extern crate xor;
+
+pub use rsrpc::{Packet, Plugins, Wrapper};
+use sha2::{Digest, Sha256};
+use std::fmt::{Debug, Formatter, Result as FResult};
+use std::io::Result;
+use std::net::SocketAddr;
+use std::sync::Arc;
 use std::thread;
 
-mod routing;
+pub mod routing;
 mod storage;
 // mod proto;
-pub mod args;
-mod node;
 mod cli;
+mod key;
+pub mod logger;
+mod node;
 mod rpc;
 mod utils;
-mod logger;
 
+use self::key::Key;
+pub use self::node::*;
 use self::routing::*;
+pub use self::rpc::*;
 use self::storage::*;
-use self::node::*;
-use self::rpc::*;
-use self::utils::*;
+pub use self::utils::*;
 
 #[derive(Clone, Debug)]
 pub struct DhtConfig {
@@ -44,8 +63,9 @@ impl Default for DhtConfig {
 
 #[derive(Clone, Debug)]
 pub struct Dht {
-  hash: String,
-  routing: Mutexed<Routing>,
+  pub hash: String,
+  pub key: Key,
+  pub routing: Mutexed<Routing>,
   storage: Mutexed<Storage>,
   config: DhtConfig,
   handle: Option<Arc<thread::JoinHandle<()>>>,
@@ -53,17 +73,22 @@ pub struct Dht {
 
 struct HashWrapper {
   hash: String,
+  pub_key: Vec<u8>,
   routing: Mutexed<Routing>,
 }
 
 impl Wrapper for HashWrapper {
   fn on_send(&self, pack: &Packet) -> Packet {
-    let mut res = self.hash.clone().as_bytes().to_vec();
+    let mut hash = self.hash.clone().as_bytes().to_vec();
+
+    let mut pub_key = self.pub_key.clone();
+
     let mut mut_pack = pack.clone();
 
-    res.append(&mut pack.data.clone());
+    hash.append(&mut pub_key);
+    hash.append(&mut pack.data.clone());
 
-    mut_pack.data = res.clone();
+    mut_pack.data = hash.clone();
 
     mut_pack
   }
@@ -73,7 +98,11 @@ impl Wrapper for HashWrapper {
 
     let mut d = pack.data.clone();
 
-    let data = d.split_off(self.hash.len());
+    // extract the hash
+    let mut pub_key = d.split_off(self.hash.len());
+
+    // extract the pubKey
+    let data = pub_key.split_off(self.pub_key.len());
 
     let hash = String::from_utf8(d).unwrap();
 
@@ -82,7 +111,9 @@ impl Wrapper for HashWrapper {
     self.routing.map(Box::new(move |routing: &mut Routing| {
       let hash_cpy = hash.clone();
 
-      routing.try_add(Node::new(sender, hash_cpy)).unwrap();
+      routing
+        .try_add(Node::new(sender, hash_cpy, pub_key.clone()))
+        .unwrap();
     }));
 
     mut_pack.data = data.clone().to_vec();
@@ -102,6 +133,7 @@ impl Dht {
     let hash = Self::new_hash();
 
     Dht {
+      key: Key::new_generate().unwrap(),
       routing: Mutexed::new(Routing::new(hash.clone())),
       storage: Mutexed::new(Storage::new()),
       handle: None,
@@ -128,21 +160,22 @@ impl Dht {
     hex::encode(sha.result())
   }
 
-  pub fn run(&mut self) {
-    logger::init_logger(self.config.verbose);
-
+  pub fn run(&mut self, bootstrap: bool) {
     info!("Hash is {}", self.hash);
 
-    Plugins::add(HashWrapper{
+    let addr = self.config.listen_addr.clone().to_string();
+
+    let mut server = Rpc::Duplex::listen(&addr);
+
+    server.network.plugins.add(HashWrapper {
+      pub_key: self.key.get_pub(),
       hash: self.hash.clone(),
       routing: self.routing.clone(),
     });
 
-    let addr = self.config.listen_addr.clone().to_string();
-
-    let server = Rpc::Duplex::listen(&addr);
-
-    self.bootstrap().unwrap();
+    if bootstrap {
+      self.bootstrap().unwrap();
+    }
 
     {
       let mut guard = server.context.lock().unwrap();
@@ -150,21 +183,17 @@ impl Dht {
     }
 
     cli::run(self.clone());
-
-    // self.handle = Some(Arc::new(thread::spawn(move || {
-    //   server.wait();
-    // })));
   }
 
-  fn bootstrap(&self) -> Result<()> {
+  pub fn bootstrap(&self) -> Result<()> {
     if let Some(addr) = self.config.connect_addr {
       trace!("Connecting to {}", addr);
 
       let mut bootstrap_node = Rpc::Duplex::connect(&self.config.connect_addr.unwrap().to_string());
 
-      let res = bootstrap_node.ping();
+      bootstrap_node.ping().unwrap().unwrap();
 
-      debug!("Connected: {}", res);
+      debug!("Connected to : {}", addr);
     } else {
       warn!("Bootstrap node !");
     }
@@ -179,7 +208,19 @@ impl Dht {
       Some(node) => {
         let mut client = Rpc::Duplex::connect(&node.addr.to_string());
 
-        client.store(data)
+        match client.store(data.clone()) {
+          Ok(r) => match r {
+            Ok(s) => s,
+            _ => String::new(),
+          },
+          Err(e) => {
+            self.routing.map(Box::new(move |routing: &mut Routing| {
+              routing.remove(&node.hash)
+            }));
+
+            self.store(data)
+          }
+        }
       }
       None => {
         let hash2 = hash.clone();
@@ -199,24 +240,29 @@ impl Dht {
         if let Some(node) = self.routing.get().get_nearest_of(hash.clone()) {
           let mut client = Rpc::Duplex::connect(&node.addr.to_string());
 
-          client.fetch(hash)
+          match client.fetch(hash.clone()) {
+            Ok(r) => match r {
+              Ok(s) => s,
+              _ => None,
+            },
+            Err(e) => {
+              self.routing.map(Box::new(move |routing: &mut Routing| {
+                routing.remove(&node.hash)
+              }));
+
+              self.fetch(hash)
+            }
+          }
         } else {
           None
         }
       }
-      Some(res) => {
-        Some(res)
-      }
+      Some(res) => Some(res),
     }
   }
 
   pub fn wait_close(&mut self) {
     Rpc::Duplex::wait()
-    // if let Some(handle) = self.handle.take() {
-    //   let mut handle = Arc::try_unwrap(handle).unwrap();
-
-    //   handle.join().unwrap();
-    // }
   }
 }
 

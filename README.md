@@ -18,6 +18,6 @@ fn main() {
 
   println!("Hash {}, Res {}", hash, String::from_utf8(res).unwrap());
 
-  dht.close();
+  dht.wait_close();
 }
 ```
