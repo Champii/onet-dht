@@ -5,9 +5,8 @@
   arbitrary_self_types,
   futures_api
 )]
-#[macro_use]
-extern crate log;
 extern crate clap;
+extern crate log;
 extern crate rust_dht;
 
 mod args;

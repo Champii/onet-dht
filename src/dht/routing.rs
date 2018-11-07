@@ -4,7 +4,6 @@ use std::cmp::Ordering::*;
 use std::collections::HashMap;
 use std::io::Result;
 use std::str;
-use std::sync::Arc;
 use xor::xor;
 
 use super::node::*;

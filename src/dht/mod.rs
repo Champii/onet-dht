@@ -213,7 +213,7 @@ impl Dht {
             Ok(s) => s,
             _ => String::new(),
           },
-          Err(e) => {
+          Err(_) => {
             self.routing.map(Box::new(move |routing: &mut Routing| {
               routing.remove(&node.hash)
             }));
@@ -245,7 +245,7 @@ impl Dht {
               Ok(s) => s,
               _ => None,
             },
-            Err(e) => {
+            Err(_) => {
               self.routing.map(Box::new(move |routing: &mut Routing| {
                 routing.remove(&node.hash)
               }));
